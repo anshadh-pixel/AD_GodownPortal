@@ -5,7 +5,8 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { 
   AlertTriangle, 
   Share2, 
-  ChevronRight 
+  ChevronRight,
+  MapPin 
 } from "lucide-react";
 import { StockItem } from "@/types/stock";
 
@@ -22,11 +23,12 @@ export function StockCardListView({
 }: StockCardListViewProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  // Generous height to show full product names across 2-3 lines without truncating
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 114,
-    overscan: 10
+    estimateSize: () => 142,
+    overscan: 8
   });
 
   if (items.length === 0) {
@@ -42,7 +44,7 @@ export function StockCardListView({
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100dvh-290px)] min-h-[460px] overflow-auto momentum-scroll scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700 relative rounded-2xl pb-12 transition-colors"
+      className="h-[calc(100dvh-270px)] min-h-[460px] overflow-auto momentum-scroll scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700 relative rounded-2xl pb-16 transition-colors"
     >
       <div
         style={{
@@ -69,11 +71,11 @@ export function StockCardListView({
                 height: `${virtualRow.size}px`,
                 transform: `translateY(${virtualRow.start}px)`
               }}
-              className="p-1"
+              className="p-1.5"
             >
               <div
                 onClick={() => onSelectItem(item)}
-                className={`h-[106px] p-3 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between shadow-xs ${
+                className={`min-h-[132px] p-3.5 rounded-xl border transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between shadow-xs ${
                   item.quantity < 0
                     ? "bg-rose-50/90 dark:bg-rose-950/25 border-rose-300 dark:border-rose-900/50"
                     : isOut
@@ -85,7 +87,7 @@ export function StockCardListView({
               >
                 {/* Header row: Code + Status Badge + WhatsApp */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-mono text-xs font-bold text-slate-800 dark:text-zinc-300 bg-slate-100 dark:bg-zinc-950 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-800">
                       {item.itemCode}
                     </span>
@@ -108,7 +110,7 @@ export function StockCardListView({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button
                       onClick={(e) => onShareWhatsApp(item, e)}
                       title="Share to WhatsApp"
@@ -120,21 +122,26 @@ export function StockCardListView({
                   </div>
                 </div>
 
-                {/* Middle: Item Name */}
-                <p className="text-sm font-semibold text-slate-900 dark:text-zinc-100 truncate mt-1">
+                {/* Middle: Full Item Name (NO TRUNCATION, shows full name completely!) */}
+                <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-zinc-100 leading-snug break-words my-2">
                   {item.itemName}
-                </p>
+                </h3>
 
                 {/* Bottom Row: Category & Quantity */}
-                <div className="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-zinc-800/50 text-xs">
-                  <span className="text-slate-500 dark:text-zinc-400 truncate max-w-[170px] text-[11px]">
-                    {item.category}
-                  </span>
+                <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 dark:border-zinc-800/60 text-xs gap-2">
+                  <div className="flex items-center gap-1.5 text-slate-500 dark:text-zinc-400 text-[11px] truncate">
+                    <span>{item.category}</span>
+                    {item.location && (
+                      <span className="font-mono bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.2 rounded text-[10px] shrink-0">
+                        {item.location}
+                      </span>
+                    )}
+                  </div>
                   
                   <div className="flex items-baseline gap-1 shrink-0 font-mono">
                     <span className="text-slate-400 dark:text-zinc-500 text-[10px]">Qty:</span>
                     <span
-                      className={`text-base font-extrabold ${
+                      className={`text-base sm:text-lg font-black ${
                         isOut
                           ? "text-rose-600 dark:text-rose-400"
                           : isLow
@@ -144,7 +151,7 @@ export function StockCardListView({
                     >
                       {item.quantity.toLocaleString()}
                     </span>
-                    <span className="text-slate-500 dark:text-zinc-400 text-xs font-normal">
+                    <span className="text-slate-500 dark:text-zinc-400 text-xs font-semibold">
                       {item.unit}
                     </span>
                   </div>

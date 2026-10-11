@@ -122,8 +122,8 @@ export function StockTableView({
                 </div>
 
                 {/* Item Name & Category */}
-                <div className="col-span-4 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100 truncate group-hover:text-slate-950 dark:group-hover:text-white">
+                <div className="col-span-4 min-w-0 pr-2">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-zinc-100 group-hover:text-slate-950 dark:group-hover:text-white leading-snug">
                     {item.itemName}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
