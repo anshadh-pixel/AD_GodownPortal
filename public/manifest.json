@@ -1,7 +1,7 @@
 {
-  "name": "Godown Stock Viewer",
-  "short_name": "Godown Stock",
-  "description": "High performance Godown Stock Viewer with 2000+ items virtualization and Google Sheets sync",
+  "name": "AD GODOWN PORTAL",
+  "short_name": "AD GODOWN",
+  "description": "AD GODOWN PORTAL - High performance stock viewer with Google Sheets sync",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#090d16",

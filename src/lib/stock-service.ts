@@ -10,7 +10,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   pinLockEnabled: false,
   pinCode: "1234",
   whatsappNumber: "",
-  godownName: "VK Godown Stock Portal"
+  godownName: "AD GODOWN PORTAL"
 };
 
 const CONFIG_KEY = "godown_stock_config";
@@ -21,7 +21,12 @@ export function loadStoredConfig(): AppConfig {
   if (typeof window === "undefined") return DEFAULT_CONFIG;
   try {
     const saved = localStorage.getItem(CONFIG_KEY);
-    return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
+    if (!saved) return DEFAULT_CONFIG;
+    const parsed = JSON.parse(saved);
+    if (parsed.godownName === "VK Godown Stock Portal" || parsed.godownName === "Central Godown (Hub 1)" || !parsed.godownName) {
+      parsed.godownName = "AD GODOWN PORTAL";
+    }
+    return { ...DEFAULT_CONFIG, ...parsed };
   } catch {
     return DEFAULT_CONFIG;
   }

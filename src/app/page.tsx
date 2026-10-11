@@ -31,7 +31,7 @@ export default function StockViewerPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [syncError, setSyncError] = useState<string | null>(null);
 
-  // Day / Night Theme State
+  // Day / Night Theme State (defaults to "dark")
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   // Filters & Search
@@ -46,17 +46,32 @@ export default function StockViewerPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
+  const applyTheme = (newTheme: "dark" | "light") => {
+    setTheme(newTheme);
+    try {
+      localStorage.setItem("godown_stock_theme", newTheme);
+    } catch {}
+
+    if (newTheme === "dark") {
+      document.documentElement.classList.add("dark");
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  };
+
   // Load initial settings, theme, and auto-detect screen width
   useEffect(() => {
     // 1. Theme initialization
-    const savedTheme = localStorage.getItem("godown_stock_theme") as "dark" | "light" | null;
-    const initialTheme = savedTheme || "dark";
-    setTheme(initialTheme);
-    if (initialTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    let initialTheme: "dark" | "light" = "dark";
+    try {
+      const saved = localStorage.getItem("godown_stock_theme") as "dark" | "light" | null;
+      if (saved === "light" || saved === "dark") {
+        initialTheme = saved;
+      }
+    } catch {}
+    applyTheme(initialTheme);
 
     // 2. Config & Lock
     const storedConfig = loadStoredConfig();
@@ -72,17 +87,6 @@ export default function StockViewerPage() {
 
     loadData(storedConfig);
   }, []);
-
-  const handleToggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    localStorage.setItem("godown_stock_theme", nextTheme);
-    if (nextTheme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
 
   const loadData = async (cfg: AppConfig) => {
     setIsLoading(true);
@@ -184,7 +188,7 @@ export default function StockViewerPage() {
     const isLow = item.status === "low_stock";
     const isOut = item.status === "out_of_stock";
 
-    const msg = `📦 *STOCK CHECK - ${config.godownName}*\n\n` +
+    const msg = `📦 *STOCK CHECK - ${config.godownName || "AD GODOWN PORTAL"}*\n\n` +
       `*Item:* ${item.itemName}\n` +
       `*Code:* ${item.itemCode}\n` +
       `*Qty Available:* ${item.quantity} ${item.unit}\n` +
@@ -207,7 +211,7 @@ export default function StockViewerPage() {
       {isLocked && (
         <PinLockModal
           correctPin={config.pinCode || "1234"}
-          godownName={config.godownName}
+          godownName={config.godownName || "AD GODOWN PORTAL"}
           onUnlock={() => setIsLocked(false)}
         />
       )}
@@ -219,7 +223,7 @@ export default function StockViewerPage() {
         source={source}
         isLoading={isLoading}
         theme={theme}
-        onToggleTheme={handleToggleTheme}
+        onSelectTheme={applyTheme}
         onRefresh={handleRefresh}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onLockApp={() => setIsLocked(true)}
@@ -294,7 +298,7 @@ export default function StockViewerPage() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Warehouse className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-semibold text-slate-700 dark:text-zinc-400">{config.godownName}</span>
+            <span className="font-semibold text-slate-700 dark:text-zinc-400">{config.godownName || "AD GODOWN PORTAL"}</span>
             <span className="text-slate-400 dark:text-zinc-600">•</span>
             <span>Weekly Google Sheet Sync System</span>
           </div>
