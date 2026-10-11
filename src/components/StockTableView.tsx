@@ -62,7 +62,7 @@ export function StockTableView({
       {/* Virtualized Rows Container */}
       <div
         ref={parentRef}
-        className="h-[620px] overflow-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 relative"
+        className="h-[calc(100dvh-290px)] min-h-[500px] overflow-auto momentum-scroll scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 relative"
       >
         <div
           style={{

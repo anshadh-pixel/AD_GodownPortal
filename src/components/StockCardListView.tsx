@@ -44,7 +44,7 @@ export function StockCardListView({
   return (
     <div
       ref={parentRef}
-      className="h-[620px] overflow-auto scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 relative rounded-2xl"
+      className="h-[calc(100dvh-290px)] min-h-[460px] overflow-auto momentum-scroll scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-900 relative rounded-2xl pb-12"
     >
       <div
         style={{

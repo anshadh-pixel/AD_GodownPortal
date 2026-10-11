@@ -107,8 +107,8 @@ export function StockFilters({
       {/* Filter Badges & Dropdowns Row */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-zinc-800/60">
         
-        {/* Status Filter Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+        {/* Status Filter Pills (Horizontal swipeable on mobile) */}
+        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 sm:pb-0 sm:flex-wrap w-full sm:w-auto scrollbar-none">
           <button
             onClick={() => onStatusFilterChange("all")}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${

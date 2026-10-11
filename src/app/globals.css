@@ -12,17 +12,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
-body {
+html, body {
   background: #090d16;
   color: #f4f4f5;
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Custom scrollbar for large virtualized tables */
+/* Prevent accidental horizontal screen shaking / swaying on mobile */
+* {
+  box-sizing: border-box;
+}
+
+/* On iOS, inputs with font-size < 16px cause the screen to auto-zoom & shift.
+   Fix: enforce 16px minimum on mobile devices */
+@media screen and (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Native smooth momentum scrolling on iOS */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior-y: contain;
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
