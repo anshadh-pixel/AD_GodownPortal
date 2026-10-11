@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useTransition } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { 
   StockItem, 
   StockFilterStatus, 
@@ -31,11 +31,14 @@ export default function StockViewerPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [syncError, setSyncError] = useState<string | null>(null);
 
+  // Day / Night Theme State
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StockFilterStatus>("all");
-  const [sortBy, setSortBy] = useState("code_asc");
+  const [sortBy, setSortBy] = useState("name_asc");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
 
   // Modals & Locks
@@ -43,23 +46,43 @@ export default function StockViewerPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
 
-  const [, startTransition] = useTransition();
-
-  // Load initial settings and auto-detect screen width
+  // Load initial settings, theme, and auto-detect screen width
   useEffect(() => {
+    // 1. Theme initialization
+    const savedTheme = localStorage.getItem("godown_stock_theme") as "dark" | "light" | null;
+    const initialTheme = savedTheme || "dark";
+    setTheme(initialTheme);
+    if (initialTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+
+    // 2. Config & Lock
     const storedConfig = loadStoredConfig();
     setConfig(storedConfig);
     if (storedConfig.pinLockEnabled) {
       setIsLocked(true);
     }
 
-    // Default to card view on mobile screens
+    // 3. Auto-detect screen width: default to card view on mobile
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       setViewMode("cards");
     }
 
     loadData(storedConfig);
   }, []);
+
+  const handleToggleTheme = () => {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("godown_stock_theme", nextTheme);
+    if (nextTheme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  };
 
   const loadData = async (cfg: AppConfig) => {
     setIsLoading(true);
@@ -165,7 +188,7 @@ export default function StockViewerPage() {
       `*Item:* ${item.itemName}\n` +
       `*Code:* ${item.itemCode}\n` +
       `*Qty Available:* ${item.quantity} ${item.unit}\n` +
-      `*Status:* ${isOut ? "❌ OUT OF STOCK" : isLow ? "⚠️ LOW STOCK (Min: " + item.reorderLevel + ")" : "✅ IN STOCK"}\n` +
+      `*Status:* ${item.quantity < 0 ? "⚠️ NEGATIVE (" + item.quantity + ")" : isOut ? "❌ OUT OF STOCK" : isLow ? "⚠️ LOW STOCK (Min: " + item.reorderLevel + ")" : "✅ IN STOCK"}\n` +
       (item.location ? `*Location:* ${item.location}\n` : "") +
       `*Updated:* ${item.lastUpdated}`;
 
@@ -178,7 +201,7 @@ export default function StockViewerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black transition-colors duration-200">
       
       {/* PIN Lock Screen if locked */}
       {isLocked && (
@@ -189,12 +212,14 @@ export default function StockViewerPage() {
         />
       )}
 
-      {/* Main Header */}
+      {/* Main Header with Day/Night Switcher */}
       <Header
         config={config}
         lastUpdated={lastUpdated}
         source={source}
         isLoading={isLoading}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
         onRefresh={handleRefresh}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onLockApp={() => setIsLocked(true)}
@@ -202,7 +227,7 @@ export default function StockViewerPage() {
 
       {/* Error banner if any */}
       {syncError && (
-        <div className="bg-rose-950/80 border-b border-rose-800 px-4 py-2 text-center text-xs text-rose-200 flex items-center justify-center gap-2">
+        <div className="bg-rose-50 dark:bg-rose-950/80 border-b border-rose-200 dark:border-rose-800 px-4 py-2 text-center text-xs text-rose-700 dark:text-rose-200 flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{syncError}</span>
         </div>
@@ -237,11 +262,11 @@ export default function StockViewerPage() {
 
         {/* Loading Skeleton or Virtualized Data List */}
         {isLoading && items.length === 0 ? (
-          <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-16 flex flex-col items-center justify-center text-center space-y-4">
-            <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+          <div className="bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 rounded-2xl p-16 flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
+            <Loader2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin" />
             <div>
-              <h3 className="text-sm font-semibold text-zinc-200">Syncing Godown Inventory...</h3>
-              <p className="text-xs text-zinc-500 mt-1">Preparing 2,000+ items with instant 60 FPS virtualization</p>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Syncing Godown Inventory...</h3>
+              <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1">Preparing 2,000+ items with instant 60 FPS virtualization</p>
             </div>
           </div>
         ) : (
@@ -265,16 +290,16 @@ export default function StockViewerPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-zinc-900 bg-zinc-950/80 py-6 text-center text-xs text-zinc-500">
+      <footer className="border-t border-slate-200 dark:border-zinc-900 bg-white dark:bg-zinc-950/80 py-6 text-center text-xs text-slate-500 dark:text-zinc-500 transition-colors">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Warehouse className="w-4 h-4 text-emerald-400" />
-            <span className="font-semibold text-zinc-400">{config.godownName}</span>
-            <span className="text-zinc-600">•</span>
+            <Warehouse className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-semibold text-slate-700 dark:text-zinc-400">{config.godownName}</span>
+            <span className="text-slate-400 dark:text-zinc-600">•</span>
             <span>Weekly Google Sheet Sync System</span>
           </div>
 
-          <div className="text-zinc-400 font-mono text-[11px]">
+          <div className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">
             ⚡ Virtual Engine: Powered by TanStack Virtual & Next.js 15
           </div>
         </div>

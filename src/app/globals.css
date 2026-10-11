@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+html.dark {
   --background: #090d16;
   --foreground: #f4f4f5;
 }
@@ -13,22 +20,21 @@
 }
 
 html, body {
-  background: #090d16;
-  color: #f4f4f5;
+  background-color: var(--background);
+  color: var(--foreground);
   font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
   max-width: 100vw;
   -webkit-tap-highlight-color: transparent;
   -webkit-text-size-adjust: 100%;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Prevent accidental horizontal screen shaking / swaying on mobile */
 * {
   box-sizing: border-box;
 }
 
-/* On iOS, inputs with font-size < 16px cause the screen to auto-zoom & shift.
-   Fix: enforce 16px minimum on mobile devices */
+/* Prevent iOS input auto-zoom */
 @media screen and (max-width: 768px) {
   input, select, textarea {
     font-size: 16px !important;
@@ -48,17 +54,26 @@ html, body {
   height: 6px;
 }
 
-::-webkit-scrollbar-track {
+html.dark ::-webkit-scrollbar-track {
   background: #0d121f;
 }
-
-::-webkit-scrollbar-thumb {
+html.dark ::-webkit-scrollbar-thumb {
   background: #272f45;
   border-radius: 4px;
 }
-
-::-webkit-scrollbar-thumb:hover {
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: #3b4668;
+}
+
+html:not(.dark) ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+html:not(.dark) ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 @keyframes fadeIn {
