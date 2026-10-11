@@ -4,6 +4,8 @@ export interface StockItem {
   itemName: string;
   category: string;
   quantity: number;
+  opening?: number;
+  sales?: number;
   unit: string;
   reorderLevel: number;
   lastUpdated: string;

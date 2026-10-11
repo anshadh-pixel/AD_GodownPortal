@@ -89,7 +89,11 @@ export function StockCardListView({
                     <span className="font-mono text-xs font-bold text-zinc-300 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">
                       {item.itemCode}
                     </span>
-                    {isOut ? (
+                    {item.quantity < 0 ? (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-600/30 text-rose-300 border border-rose-500/50">
+                        NEG ({item.quantity})
+                      </span>
+                    ) : isOut ? (
                       <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
                         OUT OF STOCK
                       </span>

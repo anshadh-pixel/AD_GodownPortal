@@ -10,7 +10,7 @@ export const DEFAULT_CONFIG: AppConfig = {
   pinLockEnabled: false,
   pinCode: "1234",
   whatsappNumber: "",
-  godownName: "Central Godown (Hub 1)"
+  godownName: "VK Godown Stock Portal"
 };
 
 const CONFIG_KEY = "godown_stock_config";
@@ -43,9 +43,11 @@ export function calculateSummary(items: StockItem[], lastSyncTime: string): Stoc
   const categories = new Set<string>();
 
   for (const item of items) {
-    totalQty += item.quantity;
+    if (item.quantity > 0) {
+      totalQty += item.quantity;
+    }
     categories.add(item.category);
-    if (item.quantity === 0) {
+    if (item.quantity <= 0) {
       outOfStock++;
     } else if (item.quantity <= item.reorderLevel) {
       lowStock++;
@@ -63,43 +65,103 @@ export function calculateSummary(items: StockItem[], lastSyncTime: string): Stoc
 }
 
 /**
- * Parses raw CSV text (from Google Sheets or billing export) into structured StockItem[]
+ * Automatically detects Cookware/Kitchenware categories from Item Name
+ * when the billing software export doesn't have an explicit Category column.
+ */
+export function detectCookwareCategory(itemName: string): string {
+  const upper = itemName.toUpperCase();
+
+  if (upper.includes("COOKER")) return "Cookers (Aluminium/IB)";
+  if (upper.includes("BIRIYANI") || upper.includes("POT")) return "Biriyani Pots";
+  if (upper.includes("APPACHATTY") || upper.includes("APPAM")) return "Appachatty";
+  if (upper.includes("KADAI") || upper.includes("KADAHI")) return "Kadai";
+  if (upper.includes("FRYPAN") || upper.includes("FRY PAN")) return "Frypans";
+  if (upper.includes("PATHIRI") || upper.includes("TAWA")) return "Tawas & Pathiri";
+  if (upper.includes("CASSEROLE")) return "Casseroles";
+  if (upper.includes("GRILLPAN") || upper.includes("GRILL PAN")) return "Grill Pans";
+  if (upper.includes("PANIYARAKKAL")) return "Paniyarakkal";
+  if (upper.includes("KETTLE")) return "Electric Kettles";
+  if (upper.includes("BOTTLE") || upper.includes("FLASK")) return "Bottles & Flasks";
+  if (upper.includes("KTF") || upper.includes("PCS SET") || upper.includes("SET")) return "Cookware Sets";
+  if (upper.includes("DIE CAST")) return "Die Cast Cookware";
+  
+  return "General Cookware";
+}
+
+/**
+ * Parses CSV text from billing software export or Google Sheets into structured StockItem[]
+ * Directly handles Billing columns: ItemName, ItemCode, Balance, Opening, Sales, etc.
  */
 export function parseStockCsv(csvText: string): StockItem[] {
   const parsed = Papa.parse<Record<string, string>>(csvText, {
     header: true,
     skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, "_")
+    transformHeader: (h) => h.trim().toLowerCase().replace(/[^a-z0-9]/g, "")
   });
 
   const now = new Date();
   const defaultDate = `${now.getDate().toString().padStart(2, "0")}-${(now.getMonth() + 1).toString().padStart(2, "0")}-${now.getFullYear()}`;
 
   return parsed.data.map((row, idx) => {
-    // Tolerant column name matching
-    const itemCode = row.item_code || row.code || row.itemcode || row.sku || `ITEM-${idx + 1}`;
-    const itemName = row.item_name || row.name || row.description || row.item || `Stock Item ${idx + 1}`;
-    const category = row.category || row.group || row.dept || "General";
-    const quantity = parseFloat(row.quantity || row.qty || row.stock || "0") || 0;
+    // 1. Item Name
+    const itemName = 
+      row.itemname || 
+      row.name || 
+      row.description || 
+      row.item || 
+      `Stock Item ${idx + 1}`;
+
+    // 2. Item Code (fallback to ItemName or generated code)
+    const itemCode = 
+      row.itemcode || 
+      row.code || 
+      row.sku || 
+      itemName;
+
+    // 3. Category: Use row category if present, otherwise auto-detect from product name!
+    const category = 
+      row.category || 
+      row.group || 
+      row.department || 
+      detectCookwareCategory(itemName);
+
+    // 4. Quantity: Primary from "balance" column in the billing software, or "quantity", "qty", "stock"
+    const balanceStr = row.balance || row.quantity || row.qty || row.stock || "0";
+    const quantity = parseFloat(balanceStr) || 0;
+
+    // 5. Opening & Sales columns from billing software
+    const opening = row.opening ? parseFloat(row.opening) : undefined;
+    const sales = row.sales ? parseFloat(row.sales) : undefined;
+
+    // 6. Unit
     const unit = row.unit || row.uom || "Nos";
-    const reorderLevel = parseFloat(row.reorder_level || row.reorder || row.min_qty || "10") || 10;
-    const lastUpdated = row.last_updated || row.updated || row.date || defaultDate;
-    const location = row.location || row.rack || row.bin || "";
+
+    // 7. Reorder Level: default to 10 if not provided
+    const reorderLevel = parseFloat(row.reorderlevel || row.reorder || row.minqty || "10") || 10;
+
+    // 8. Last Updated
+    const lastUpdated = row.lastupdated || row.updated || row.date || defaultDate;
+
+    // 9. Location & Rate
+    const location = row.location || row.rack || row.godown || "";
     const rate = parseFloat(row.rate || row.price || row.mrp || "0") || 0;
 
+    // Status logic: <= 0 is out of stock (including negative overbilled balances)
     let status: StockItem["status"] = "in_stock";
-    if (quantity === 0) {
+    if (quantity <= 0) {
       status = "out_of_stock";
     } else if (quantity <= reorderLevel) {
       status = "low_stock";
     }
 
     return {
-      id: `${itemCode}-${idx}`,
+      id: `stock-${idx}-${itemCode.replace(/\s+/g, "_")}`,
       itemCode,
       itemName,
       category,
       quantity,
+      opening,
+      sales,
       unit,
       reorderLevel,
       lastUpdated,
@@ -111,7 +173,7 @@ export function parseStockCsv(csvText: string): StockItem[] {
 }
 
 /**
- * Fetches stock data from Google Sheets or returns Mock Data
+ * Fetches stock data from Google Sheets or returns Cookware Mock Data
  */
 export async function fetchStockData(config: AppConfig): Promise<{ items: StockItem[]; lastUpdated: string; source: string }> {
   // If demo mode is active or no URL provided, return mock data
@@ -122,7 +184,7 @@ export async function fetchStockData(config: AppConfig): Promise<{ items: StockI
     return {
       items,
       lastUpdated: timeStr,
-      source: "Demo Godown Inventory (2,500+ Items)"
+      source: "Cookware Inventory (2,500+ Items)"
     };
   }
 

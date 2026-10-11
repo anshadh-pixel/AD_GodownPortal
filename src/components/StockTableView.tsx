@@ -105,7 +105,11 @@ export function StockTableView({
                     {item.itemCode}
                   </span>
                   
-                  {isOut ? (
+                  {item.quantity < 0 ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-600/30 text-rose-300 border border-rose-500/50 shrink-0">
+                      NEG ({item.quantity})
+                    </span>
+                  ) : isOut ? (
                     <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 shrink-0">
                       OUT
                     </span>

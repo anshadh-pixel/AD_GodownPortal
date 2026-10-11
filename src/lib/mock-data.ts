@@ -1,164 +1,131 @@
 import { StockItem } from "@/types/stock";
+import { detectCookwareCategory } from "./stock-service";
 
-const CATEGORIES = [
-  "Hardware & Fasteners",
-  "Electrical & Lighting",
-  "Plumbing & Pipes",
-  "Paints & Chemicals",
-  "Power Tools & Blades",
-  "Building Materials",
-  "Sanitary & Fittings",
-  "Safety & PPE",
-  "Hand Tools",
-  "Adhesives & Sealants",
-  "Pumps & Motors",
-  "Packaging Materials"
+const REAL_COOKWARE_TEMPLATES = [
+  { name: "VITA 1000 BOTTLE", balance: 135, opening: 135, sales: 0, reorder: 30 },
+  { name: "VK ALUMINIUM COOKER IB 3 LTR", balance: 18, opening: 20, sales: 2, reorder: 25 },
+  { name: "VK ALUMINIUM COOKER IB 5 LTR", balance: 23, opening: 25, sales: 2, reorder: 25 },
+  { name: "VK APPACHATTY 200", balance: 183, opening: 183, sales: 0, reorder: 40 },
+  { name: "VK APPACHATTY 200 SHRINK WRAP", balance: 213, opening: 213, sales: 0, reorder: 50 },
+  { name: "VK BIRIYANI POT 8L - NIB W/GL", balance: 161, opening: 161, sales: 0, reorder: 30 },
+  { name: "VK BIRIYANI POT 10L - NIB W/GL", balance: 16, opening: 16, sales: 0, reorder: 20 },
+  { name: "VK BIRIYANI POT 12L - NIB W/GL", balance: 20, opening: 20, sales: 0, reorder: 20 },
+  { name: "VK ELECTRIC KETTLE 1.5 LTR", balance: 354, opening: 354, sales: 0, reorder: 60 },
+  { name: "VK FESTIVE SPL BIRIYANI POT 10L - NIB W GL", balance: 138, opening: 138, sales: 0, reorder: 25 },
+  { name: "VK FESTIVE SPL BIRIYANI POT 8L - NIB W GL", balance: 33, opening: 33, sales: 0, reorder: 20 },
+  { name: "VK FESTIVE SPL FRYPAN 240 SHRINK", balance: 179, opening: 179, sales: 0, reorder: 35 },
+  { name: "VK IB FRY PAN 280", balance: 56, opening: 56, sales: 0, reorder: 25 },
+  { name: "VK IB FRYPAN 240 (TAPER)", balance: 120, opening: 120, sales: 0, reorder: 30 },
+  { name: "VK IB TAWA 250", balance: 272, opening: 272, sales: 0, reorder: 50 },
+  { name: "VK IB TAWA 280", balance: 88, opening: 88, sales: 0, reorder: 25 },
+  { name: "VK KADAI 240 NIB W GL", balance: -2, opening: -2, sales: 0, reorder: 15 },
+  { name: "VK KADAI 260 IB GL", balance: 41, opening: 41, sales: 0, reorder: 20 },
+  { name: "VK KADAI 260 NIB W GL", balance: 142, opening: 142, sales: 0, reorder: 30 },
+  { name: "VK KADAI 280 IB GL", balance: 38, opening: 38, sales: 0, reorder: 20 },
+  { name: "VK KADAI 280 NIB W GL", balance: 36, opening: 36, sales: 0, reorder: 20 },
+  { name: "VK KTF 3 PCS SET - IB W GL", balance: 1, opening: 1, sales: 0, reorder: 10 },
+  { name: "VK MINI FRYPAN 120 NIB SHRINK WRAP", balance: 169, opening: 169, sales: 0, reorder: 40 },
+  { name: "VK MINI FRYPAN 160 NIB SHRINK WRAP", balance: 1, opening: 1, sales: 0, reorder: 20 },
+  { name: "VK MINI FRYPAN 200", balance: 0, opening: 0, sales: 0, reorder: 25 },
+  { name: "VK MINI TAWA 190 NIB SHRINK WRAP", balance: 367, opening: 367, sales: 0, reorder: 50 },
+  { name: "VK NIB FRYPAN 240 (TAPER)", balance: 42, opening: 42, sales: 0, reorder: 20 },
+  { name: "VK NIB KTF 3 PC SET", balance: 211, opening: 211, sales: 0, reorder: 30 },
+  { name: "VK NIB TAWA 250", balance: 59, opening: 69, sales: 10, reorder: 30 },
+  { name: "VK PANIYARAKKAL 12 PIT SHRINK", balance: 212, opening: 218, sales: 6, reorder: 40 },
+  { name: "VK PREMIUM DIE CAST FRYPAN 250", balance: 116, opening: 116, sales: 0, reorder: 25 },
+  { name: "VK PREMIUM DIE CAST GRILLPAN 250 NIB", balance: 66, opening: 66, sales: 0, reorder: 20 },
+  { name: "VK PREMIUM DIE CAST TAWA 270", balance: 3, opening: 3, sales: 0, reorder: 15 },
+  { name: "VK PREMIUM DIE CAST TAWA 310", balance: -2, opening: -2, sales: 0, reorder: 15 },
+  { name: "VK PREMIUM IB CASSEROLE 200 GL", balance: 160, opening: 160, sales: 0, reorder: 30 },
+  { name: "VK PREMIUM IB CASSEROLE 240 GL", balance: 173, opening: 176, sales: 3, reorder: 30 },
+  { name: "VK PREMIUM NIB TAWA 280 WIRE HANDLE", balance: 142, opening: 142, sales: 0, reorder: 30 },
+  { name: "VK ROUND PATHIRI TAWA - 325", balance: 41, opening: 41, sales: 0, reorder: 25 },
+  { name: "VK SC ROUND PATHIRI TAWA 325 - 3MM", balance: 52, opening: 52, sales: 0, reorder: 20 },
+  { name: "VK SC SQUARE PATHIRI TAWA 3MM", balance: 26, opening: 31, sales: 5, reorder: 20 },
+  { name: "VK SHRINK TAWA 250", balance: 264, opening: 264, sales: 0, reorder: 40 }
 ];
 
-const UNITS = ["Nos", "Boxes", "Pcs", "Kg", "Mtrs", "Rolls", "Sets", "Ltrs"];
-
-const SAMPLE_PREFIXES = [
-  "Premium Heavy Duty", "Standard Industrial", "Super-Grip", "Ultra-Tough",
-  "Brass Coated", "Stainless Steel SS-304", "Galvanized GI", "High Performance",
-  "Compact Pro", "Multi-Purpose", "Eco-Line", "Precision Engineered"
+const VARIANT_SUFFIXES = [
+  "200", "220", "240", "260", "280", "300", "325", "350", "400",
+  "IB INDUCTION", "NIB NON-INDUCTION", "GLASSTOP (GL)", "STEEL LID",
+  "WOODEN HANDLE", "SOFT TOUCH", "EXTRA DEEP", "HARD ANODISED",
+  "3-PLY STAINLESS", "CERAMIC COAT", "DOUBLE COAT", "EXPORT QUALITY"
 ];
 
-const SAMPLE_ITEMS: Record<string, string[]> = {
-  "Hardware & Fasteners": [
-    "Hex Head Bolt M8 x 50mm", "Self-Tapping Screw 2.5 inch", "Drywall Screw Black 1.5 inch",
-    "Expansion Anchor Bolt 10mm", "Nylon Wall Plug 6mm", "SS-304 Washer M10",
-    "Nyloc Lock Nut M12", "Carriage Bolt 3/8 x 3 inch", "Spring Washer 8mm",
-    "Threaded Rod 1 Meter M12", "Corner L-Bracket 4x4 inch", "Heavy Duty Door Hinge 5 inch"
-  ],
-  "Electrical & Lighting": [
-    "Copper Flexible Wire 1.5 sq mm Red", "Copper Flexible Wire 2.5 sq mm Blue",
-    "MCB Single Pole 16A C-Curve", "MCB Double Pole 32A C-Curve", "RCCB 4-Pole 63A 30mA",
-    "Modular Switch 6A 1-Way", "Modular Socket 16A with Shutter", "LED Batten Tube 20W 6500K",
-    "LED Slim Panel Downlight 12W Warm White", "PVC Conduit Pipe 20mm Heavy",
-    "PVC Conduit Junction Box 4-Way", "Industrial Cable Tie 200mm Heavy"
-  ],
-  "Plumbing & Pipes": [
-    "CPVC Pipe 1 inch SDR 11 3M", "UPVC Pipe 1.5 inch Schedule 40", "CPVC Elbow 90 Deg 1 inch",
-    "CPVC Brass Male Adaptor 1 x 0.5 inch", "UPVC Ball Valve 1.25 inch Solvent Weld",
-    "PTFE Teflon Thread Seal Tape 12mm", "PVC Waste Pipe Flexible 32mm", "Brass Bib Cock 0.5 inch",
-    "Angle Valve with Flange Quarter Turn", "CPVC Solvent Cement 250ml Tin",
-    "Overhead Water Tank Ball Valve 1 inch", "Multi-Floor Drain Trap with Jali 100mm"
-  ],
-  "Paints & Chemicals": [
-    "Interior Acrylic Emulsion 20L White", "Exterior Weatherproof Paint 10L Terracotta",
-    "Metal Primer Red Oxide 4L", "Wood Primer Oil Based 4L", "Universal Stainer Fast Yellow 100ml",
-    "Synthetic Enamel Gloss 1L Signal Red", "Waterproof Wall Putty 40Kg Bag",
-    "Polyurethane Wood Varnish 1L", "Rust Remover Liquid 500ml", "Masking Tape 2 inch General Purpose"
-  ],
-  "Power Tools & Blades": [
-    "Angle Grinder 850W 4-inch Heavy", "Hammer Drill Machine 650W 13mm",
-    "Cordless Screwdriver 12V Li-Ion", "Diamond Cutting Blade 4-inch Marble",
-    "TCT Saw Blade 7-1/4 inch 40T", "HSS Drill Bit Set 13 Pcs", "SDS Plus Masonry Bit 10x160mm",
-    "Abrasive Cut-Off Wheel 14-inch Metal", "Flap Disc 4-inch Grit 80", "Electric Blower 600W Variable Speed"
-  ],
-  "Building Materials": [
-    "Portland Pozzolana Cement (PPC) 50Kg", "Ordinary Portland Cement 53 Grade 50Kg",
-    "Tile Adhesive High Polymer 20Kg", "Grout Water Resistant 1Kg Ivory",
-    "Gypsum Plaster Super Fine 25Kg", "Waterproofing Chemical 2K 10Kg Pack",
-    "Fiberglass Mesh Roll 160g 50M", "AAC Block Joining Mortar 40Kg"
-  ],
-  "Sanitary & Fittings": [
-    "Wall Hung Water Closet White", "Ceramic Wash Basin Countertop 18x13 inch",
-    "Health Faucet ABS Chrome with 1.2m Hose", "Wall Mixer with Provision for Hand Shower",
-    "Kitchen Sink Single Bowl Stainless Steel 24x18", "Brass Waste Coupling 32mm Half Thread",
-    "Shower Arm 9-inch with Round Rain Shower 6-inch", "Toilet Seat Cover Soft Close Standard"
-  ],
-  "Safety & PPE": [
-    "Safety Helmet Industrial Ratchet Suspension Yellow", "Safety Shoes Steel Toe Cap Size 8",
-    "Nitrile Coated Work Gloves Pair", "Safety Goggles Clear Anti-Fog Polycarbonate",
-    "Dust Mask N95 Respirator Pack of 20", "Reflective Safety Vest High-Visibility Orange",
-    "Ear Plugs Corded Reusable SNR 32dB", "Full Body Safety Harness with Double Lanyard"
-  ],
-  "Hand Tools": [
-    "Adjustable Wrench 10-inch Chrome Vanadium", "Combination Plier 8-inch Insulated",
-    "Long Nose Plier 6-inch with Cutter", "Claw Hammer 16oz Fiberglass Handle",
-    "Spirit Level 24-inch Magnetic 3-Vial", "Measuring Tape 5 Meter Steel Blade Heavy",
-    "Hacksaw Frame Heavy Duty with High Carbon Blade", "Pipe Wrench 14-inch Cast Iron Heavy"
-  ],
-  "Adhesives & Sealants": [
-    "Cyanoacrylate Instant Super Glue 20g", "Epoxy Steel Compound Adhesive 50g",
-    "Silicone Sealant Clear All-Weather 300ml Cartridge", "PU Expanding Foam 750ml Can",
-    "Wood Adhesive Waterproof PVA 1Kg", "Heavy Duty Mounting Tape 1 inch x 5M",
-    "Threadlocker Blue Medium Strength 50ml", "Gasket Maker RTV Red High Temp 85g"
-  ],
-  "Pumps & Motors": [
-    "Self-Priming Monoblock Pump 0.5 HP Single Phase", "Open Well Submersible Pump 1.0 HP Single Phase",
-    "Automatic Water Pressure Booster Pump 0.5 HP", "Float Switch Sensor Cable 5 Meter for Tank",
-    "Centrifugal Water Pump 1.5 HP Three Phase", "Capacitor 25 MFD 440V Motor Run"
-  ],
-  "Packaging Materials": [
-    "BOPP Packaging Tape 2 inch 65M Brown", "Stretch Wrap Film Roll 500mm x 300M 23 Micron",
-    "Air Bubble Roll 1 Meter x 100M Heavy", "Corrugated Box 12x10x8 inch 3-Ply (Pack of 25)",
-    "PP Strapping Roll Manual Grade 12mm 10Kg", "Strapping Tensioner & Sealer Combo Tool"
-  ]
-};
-
-// Seeded pseudorandom function to ensure stable mock data
 function pseudoRandom(seed: number) {
   const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
 }
 
-export function generateMockStockData(count: number = 2500): StockItem[] {
+export function generateMockStockData(totalCount: number = 2500): StockItem[] {
   const items: StockItem[] = [];
   const racks = ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K"];
 
-  for (let i = 1; i <= count; i++) {
-    const catIndex = (i - 1) % CATEGORIES.length;
-    const category = CATEGORIES[catIndex];
-    const itemPool = SAMPLE_ITEMS[category] || ["Standard Warehouse Item"];
-    const baseItemName = itemPool[(i * 7) % itemPool.length];
-    const prefix = SAMPLE_PREFIXES[(i * 13) % SAMPLE_PREFIXES.length];
-    
-    // Compute item code e.g. "HW-1001", "EL-1045", "PL-2090"
-    const catCode = category.substring(0, 2).toUpperCase();
-    const itemCode = `${catCode}-${(1000 + i).toString()}`;
-    
-    // Vary quantities to have realistic mix of normal, low, and out of stock
-    const rand = pseudoRandom(i * 17 + 42);
-    const reorderLevel = Math.floor(pseudoRandom(i * 31) * 35) + 10; // 10 to 45
-    
+  // 1. First add the exact items from the user's billing screen
+  REAL_COOKWARE_TEMPLATES.forEach((tmpl, i) => {
+    const isOut = tmpl.balance <= 0;
+    const isLow = !isOut && tmpl.balance <= tmpl.reorder;
+    const rackLetter = racks[i % racks.length];
+    const shelfNum = ((i * 3) % 30) + 1;
+
+    items.push({
+      id: `real-${i}`,
+      itemCode: tmpl.name,
+      itemName: tmpl.name,
+      category: detectCookwareCategory(tmpl.name),
+      quantity: tmpl.balance,
+      opening: tmpl.opening,
+      sales: tmpl.sales,
+      unit: "Nos",
+      reorderLevel: tmpl.reorder,
+      lastUpdated: "11-10-2026",
+      location: `Rack ${rackLetter}-${shelfNum.toString().padStart(2, "0")}`,
+      rate: Math.floor(pseudoRandom(i * 33) * 600) + 250,
+      status: isOut ? "out_of_stock" : isLow ? "low_stock" : "in_stock"
+    });
+  });
+
+  // 2. Expand up to 2500 items with matching cookware variants to test large-scale virtualization
+  const baseCount = REAL_COOKWARE_TEMPLATES.length;
+  for (let i = baseCount; i < totalCount; i++) {
+    const baseTmpl = REAL_COOKWARE_TEMPLATES[i % baseCount];
+    const suffix = VARIANT_SUFFIXES[(i * 7) % VARIANT_SUFFIXES.length];
+    const variantNum = Math.floor(i / baseCount) + 1;
+    const itemName = `${baseTmpl.name} [V${variantNum} ${suffix}]`;
+    const rand = pseudoRandom(i * 19 + 7);
+    const reorderLevel = Math.floor(pseudoRandom(i * 29) * 30) + 10;
+
     let quantity: number;
     let status: StockItem["status"];
 
-    if (rand < 0.05) {
-      // 5% out of stock
-      quantity = 0;
+    if (rand < 0.04) {
+      quantity = rand < 0.015 ? -2 : 0; // negative or 0
       status = "out_of_stock";
-    } else if (rand < 0.18) {
-      // ~13% low stock
-      quantity = Math.floor(pseudoRandom(i * 19) * (reorderLevel - 1)) + 1;
+    } else if (rand < 0.16) {
+      quantity = Math.floor(pseudoRandom(i * 13) * (reorderLevel - 1)) + 1;
       status = "low_stock";
     } else {
-      // 82% healthy stock
-      quantity = Math.floor(pseudoRandom(i * 23) * 350) + reorderLevel + 15;
+      quantity = Math.floor(pseudoRandom(i * 37) * 300) + reorderLevel + 10;
       status = "in_stock";
     }
 
-    const unit = UNITS[(i * 3) % UNITS.length];
-    const rackLetter = racks[(i * 5) % racks.length];
-    const shelfNum = ((i * 11) % 40) + 1;
+    const rackLetter = racks[(i * 3) % racks.length];
+    const shelfNum = ((i * 5) % 35) + 1;
     const location = `Rack ${rackLetter}-${shelfNum.toString().padStart(2, "0")}`;
-
-    const dateDay = ((i * 7) % 28) + 1;
-    const lastUpdated = `${dateDay.toString().padStart(2, "0")}-10-2026`;
 
     items.push({
       id: `item-${i}`,
-      itemCode,
-      itemName: `${prefix} ${baseItemName}`,
-      category,
+      itemCode: itemName,
+      itemName,
+      category: detectCookwareCategory(itemName),
       quantity,
-      unit,
+      opening: quantity + Math.floor(pseudoRandom(i) * 5),
+      sales: Math.floor(pseudoRandom(i * 11) * 8),
+      unit: "Nos",
       reorderLevel,
-      lastUpdated,
+      lastUpdated: "11-10-2026",
       location,
-      rate: Math.floor(pseudoRandom(i * 47) * 900) + 45,
+      rate: Math.floor(pseudoRandom(i * 23) * 750) + 200,
       status
     });
   }

@@ -181,6 +181,30 @@ export function ItemDetailModal({ item, config, onClose }: ItemDetailModalProps)
               </span>
             </div>
 
+            {item.opening !== undefined && (
+              <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-800">
+                <span className="text-zinc-500 flex items-center gap-1.5 mb-1">
+                  <Package className="w-3.5 h-3.5 text-zinc-400" />
+                  Opening Balance
+                </span>
+                <span className="text-sm font-semibold text-zinc-200 font-mono">
+                  {item.opening} {item.unit}
+                </span>
+              </div>
+            )}
+
+            {item.sales !== undefined && (
+              <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-800">
+                <span className="text-zinc-500 flex items-center gap-1.5 mb-1">
+                  <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                  Sales Recorded
+                </span>
+                <span className="text-sm font-semibold text-amber-300 font-mono">
+                  {item.sales} {item.unit}
+                </span>
+              </div>
+            )}
+
             {item.rate && item.rate > 0 && (
               <>
                 <div className="p-3 bg-zinc-950/80 rounded-xl border border-zinc-800">
