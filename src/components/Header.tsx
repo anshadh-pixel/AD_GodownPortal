@@ -37,7 +37,10 @@ export function Header({
   onLockApp
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 dark:border-zinc-800 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md transition-colors duration-200">
+    <header 
+      className="sticky top-0 z-30 border-b border-slate-200 dark:border-zinc-800 bg-white/95 dark:bg-[#090d16]/95 backdrop-blur-md transition-colors duration-200"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20 gap-2 sm:gap-4">
           

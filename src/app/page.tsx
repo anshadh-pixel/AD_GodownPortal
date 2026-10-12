@@ -52,13 +52,21 @@ export default function StockViewerPage() {
       localStorage.setItem("godown_stock_theme", newTheme);
     } catch {}
 
-    if (newTheme === "dark") {
+    const isDark = newTheme === "dark";
+    if (isDark) {
       document.documentElement.classList.add("dark");
       document.documentElement.setAttribute("data-theme", "dark");
     } else {
       document.documentElement.classList.remove("dark");
       document.documentElement.setAttribute("data-theme", "light");
     }
+
+    try {
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) {
+        metaTheme.setAttribute("content", isDark ? "#090d16" : "#ffffff");
+      }
+    } catch {}
   };
 
   // Load initial settings, theme, and auto-detect screen width
