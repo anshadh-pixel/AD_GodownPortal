@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { 
   StockItem, 
   StockFilterStatus, 
@@ -21,7 +21,7 @@ import { StockCardListView } from "@/components/StockCardListView";
 import { ItemDetailModal } from "@/components/ItemDetailModal";
 import { GoogleSheetSettingsModal } from "@/components/GoogleSheetSettingsModal";
 import { PinLockModal } from "@/components/PinLockModal";
-import { Loader2, Warehouse, AlertCircle } from "lucide-react";
+import { Loader2, Warehouse, AlertCircle, RefreshCw } from "lucide-react";
 
 export default function StockViewerPage() {
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
@@ -40,6 +40,13 @@ export default function StockViewerPage() {
   const [statusFilter, setStatusFilter] = useState<StockFilterStatus>("all");
   const [sortBy, setSortBy] = useState("name_asc");
   const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+
+  // Pull-to-refresh states
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const touchStartY = useRef(0);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
 
   // Modals & Locks
   const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
@@ -112,8 +119,78 @@ export default function StockViewerPage() {
     }
   };
 
-  const handleRefresh = () => {
-    loadData(config);
+  const handleRefresh = async () => {
+    await loadData(config);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      let isAtTop = true;
+      let target = e.target as HTMLElement | null;
+      while (target && target !== document.body && target !== document.documentElement) {
+        if (target.scrollTop > 0) {
+          isAtTop = false;
+          break;
+        }
+        target = target.parentElement;
+      }
+
+      if (isAtTop) {
+        touchStartY.current = e.touches[0].clientY;
+        setIsPulling(true);
+      } else {
+        setIsPulling(false);
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isPulling || e.touches.length !== 1 || isRefreshing) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - touchStartY.current;
+
+    let isAtTop = true;
+    let target = e.target as HTMLElement | null;
+    while (target && target !== document.body && target !== document.documentElement) {
+      if (target.scrollTop > 0) {
+        isAtTop = false;
+        break;
+      }
+      target = target.parentElement;
+    }
+
+    if (isAtTop && diff > 0) {
+      const damped = Math.min(Math.pow(diff, 0.75) * 2.5, 75);
+      setPullDistance(damped);
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+    } else {
+      setPullDistance(0);
+    }
+  };
+
+  const handleTouchEnd = async () => {
+    if (!isPulling) return;
+    setIsPulling(false);
+
+    if (pullDistance >= 50 && !isRefreshing) {
+      setIsRefreshing(true);
+      setPullDistance(50);
+      try {
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try { navigator.vibrate(25); } catch {}
+        }
+        await loadData(config);
+      } finally {
+        setTimeout(() => {
+          setIsRefreshing(false);
+          setPullDistance(0);
+        }, 350);
+      }
+    } else {
+      setPullDistance(0);
+    }
   };
 
   const handleSaveConfig = (newConfig: AppConfig) => {
@@ -213,7 +290,7 @@ export default function StockViewerPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-zinc-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-black transition-colors duration-200">
+    <div className="fixed inset-0 h-full w-full flex flex-col overflow-hidden bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-zinc-100 font-sans selection:bg-emerald-500 selection:text-black transition-colors duration-200">
       
       {/* PIN Lock Screen if locked */}
       {isLocked && (
@@ -237,85 +314,124 @@ export default function StockViewerPage() {
         onLockApp={() => setIsLocked(true)}
       />
 
+      {/* Pull-To-Refresh Dynamic Indicator Pill */}
+      <div 
+        className="flex items-center justify-center overflow-hidden transition-all duration-200 pointer-events-none shrink-0"
+        style={{ 
+          height: `${pullDistance}px`,
+          opacity: pullDistance > 10 ? Math.min(pullDistance / 50, 1) : 0
+        }}
+      >
+        <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-900/95 dark:bg-zinc-800/95 text-white text-xs font-semibold shadow-md border border-slate-700/60">
+          <RefreshCw 
+            className={`w-3.5 h-3.5 text-emerald-400 ${isRefreshing ? "animate-spin" : ""}`}
+            style={{
+              transform: isRefreshing ? undefined : `rotate(${Math.min(pullDistance * 5, 360)}deg)`
+            }}
+          />
+          <span>
+            {isRefreshing 
+              ? "Syncing Godown stock..." 
+              : pullDistance >= 50 
+              ? "Release to refresh" 
+              : "Pull down to refresh"}
+          </span>
+        </div>
+      </div>
+
       {/* Error banner if any */}
       {syncError && (
-        <div className="bg-rose-50 dark:bg-rose-950/80 border-b border-rose-200 dark:border-rose-800 px-4 py-2 text-center text-xs text-rose-700 dark:text-rose-200 flex items-center justify-center gap-2">
+        <div className="shrink-0 bg-rose-50 dark:bg-rose-950/80 border-b border-rose-200 dark:border-rose-800 px-4 py-2 text-center text-xs text-rose-700 dark:text-rose-200 flex items-center justify-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{syncError}</span>
         </div>
       )}
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        
-        {/* KPI Dashboard */}
-        <DashboardStats
-          summary={summary}
-          activeStatusFilter={statusFilter}
-          onSelectStatusFilter={(st) => setStatusFilter(st)}
-        />
+      {/* Single Scrollable Container with contained bounce */}
+      <div
+        ref={mainScrollRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain relative flex flex-col scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700"
+        style={{
+          WebkitOverflowScrolling: "touch",
+          overscrollBehavior: "contain",
+          overscrollBehaviorY: "contain"
+        }}
+      >
+        {/* Main Container */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
+          
+          {/* KPI Dashboard */}
+          <DashboardStats
+            summary={summary}
+            activeStatusFilter={statusFilter}
+            onSelectStatusFilter={(st) => setStatusFilter(st)}
+          />
 
-        {/* Search, Category, Status & View Filters */}
-        <StockFilters
-          searchQuery={searchQuery}
-          onSearchChange={(q) => setSearchQuery(q)}
-          selectedCategory={selectedCategory}
-          onCategoryChange={(cat) => setSelectedCategory(cat)}
-          categories={categoryCounts}
-          statusFilter={statusFilter}
-          onStatusFilterChange={(st) => setStatusFilter(st)}
-          sortBy={sortBy}
-          onSortByChange={(s) => setSortBy(s)}
-          viewMode={viewMode}
-          onViewModeChange={(m) => setViewMode(m)}
-          totalFilteredCount={filteredItems.length}
-          totalCount={items.length}
-        />
+          {/* Search, Category, Status & View Filters */}
+          <StockFilters
+            searchQuery={searchQuery}
+            onSearchChange={(q) => setSearchQuery(q)}
+            selectedCategory={selectedCategory}
+            onCategoryChange={(cat) => setSelectedCategory(cat)}
+            categories={categoryCounts}
+            statusFilter={statusFilter}
+            onStatusFilterChange={(st) => setStatusFilter(st)}
+            sortBy={sortBy}
+            onSortByChange={(s) => setSortBy(s)}
+            viewMode={viewMode}
+            onViewModeChange={(m) => setViewMode(m)}
+            totalFilteredCount={filteredItems.length}
+            totalCount={items.length}
+          />
 
-        {/* Loading Skeleton or Virtualized Data List */}
-        {isLoading && items.length === 0 ? (
-          <div className="bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 rounded-2xl p-16 flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
-            <Loader2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin" />
+          {/* Loading Skeleton or Virtualized Data List */}
+          {isLoading && items.length === 0 ? (
+            <div className="bg-white dark:bg-zinc-900/60 border border-slate-200 dark:border-zinc-800 rounded-2xl p-16 flex flex-col items-center justify-center text-center space-y-4 shadow-sm">
+              <Loader2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-spin" />
+              <div>
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Syncing Godown Inventory...</h3>
+                <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1">Preparing 2,000+ items with instant 60 FPS virtualization</p>
+              </div>
+            </div>
+          ) : (
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-zinc-200">Syncing Godown Inventory...</h3>
-              <p className="text-xs text-slate-500 dark:text-zinc-500 mt-1">Preparing 2,000+ items with instant 60 FPS virtualization</p>
+              {viewMode === "table" ? (
+                <StockTableView
+                  items={filteredItems}
+                  onSelectItem={(item) => setSelectedItem(item)}
+                  onShareWhatsApp={handleQuickWhatsAppShare}
+                />
+              ) : (
+                <StockCardListView
+                  items={filteredItems}
+                  onSelectItem={(item) => setSelectedItem(item)}
+                  onShareWhatsApp={handleQuickWhatsAppShare}
+                />
+              )}
+            </div>
+          )}
+
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-200 dark:border-zinc-900 bg-white dark:bg-zinc-950/80 py-6 text-center text-xs text-slate-500 dark:text-zinc-500 transition-colors mt-auto">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Warehouse className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="font-semibold text-slate-700 dark:text-zinc-400">{config.godownName || "AD GODOWN PORTAL"}</span>
+              <span className="text-slate-400 dark:text-zinc-600">•</span>
+              <span>Weekly Google Sheet Sync System</span>
+            </div>
+
+            <div className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">
+              ⚡ Virtual Engine: Powered by TanStack Virtual & Next.js 15
             </div>
           </div>
-        ) : (
-          <div>
-            {viewMode === "table" ? (
-              <StockTableView
-                items={filteredItems}
-                onSelectItem={(item) => setSelectedItem(item)}
-                onShareWhatsApp={handleQuickWhatsAppShare}
-              />
-            ) : (
-              <StockCardListView
-                items={filteredItems}
-                onSelectItem={(item) => setSelectedItem(item)}
-                onShareWhatsApp={handleQuickWhatsAppShare}
-              />
-            )}
-          </div>
-        )}
-
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-zinc-900 bg-white dark:bg-zinc-950/80 py-6 text-center text-xs text-slate-500 dark:text-zinc-500 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Warehouse className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-semibold text-slate-700 dark:text-zinc-400">{config.godownName || "AD GODOWN PORTAL"}</span>
-            <span className="text-slate-400 dark:text-zinc-600">•</span>
-            <span>Weekly Google Sheet Sync System</span>
-          </div>
-
-          <div className="text-slate-500 dark:text-zinc-400 font-mono text-[11px]">
-            ⚡ Virtual Engine: Powered by TanStack Virtual & Next.js 15
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
 
       {/* Item Detail Modal / Drawer */}
       <ItemDetailModal

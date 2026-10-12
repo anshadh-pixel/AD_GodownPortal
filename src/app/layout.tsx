@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "AD GODOWN PORTAL"
   }
 };
@@ -70,7 +70,7 @@ export default function RootLayout({
                   }
                 } catch(e) {}
 
-                // 1. Block pinch zoom on multi-touch touchstart & touchmove
+                // 1. Block pinch zoom on multi-touch touchstart & touchmove everywhere
                 document.addEventListener('touchstart', function(e) {
                   if (e.touches && e.touches.length > 1) {
                     e.preventDefault();
@@ -110,34 +110,6 @@ export default function RootLayout({
                     e.preventDefault();
                   }
                   lastTap = currentTime;
-                }, { passive: false });
-
-                // 5. Block pull-down rubber bounce when at top of document
-                var touchStartY = 0;
-                window.addEventListener('touchstart', function(e) {
-                  if (e.touches && e.touches.length === 1) {
-                    touchStartY = e.touches[0].clientY;
-                  }
-                }, { passive: true });
-
-                window.addEventListener('touchmove', function(e) {
-                  if (e.touches && e.touches.length === 1) {
-                    var touchY = e.touches[0].clientY;
-                    if (window.scrollY <= 0 && touchY > touchStartY) {
-                      var el = e.target;
-                      var canScrollUp = false;
-                      while (el && el !== document.body && el !== document.documentElement) {
-                        if (el.scrollHeight > el.clientHeight && el.scrollTop > 0) {
-                          canScrollUp = true;
-                          break;
-                        }
-                        el = el.parentElement;
-                      }
-                      if (!canScrollUp && window.scrollY <= 0) {
-                        e.preventDefault();
-                      }
-                    }
-                  }
                 }, { passive: false });
               })();
             `

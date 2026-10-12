@@ -44,7 +44,13 @@ export function StockCardListView({
   return (
     <div
       ref={parentRef}
-      className="h-[calc(100dvh-270px)] min-h-[460px] overflow-auto momentum-scroll scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700 relative rounded-2xl pb-16 transition-colors"
+      style={{ 
+        overscrollBehavior: "contain", 
+        overscrollBehaviorY: "contain", 
+        touchAction: "pan-y",
+        WebkitOverflowScrolling: "touch"
+      }}
+      className="h-[calc(100dvh-270px)] min-h-[460px] overflow-y-auto overflow-x-hidden momentum-scroll scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700 relative rounded-2xl pb-16 transition-colors"
     >
       <div
         style={{

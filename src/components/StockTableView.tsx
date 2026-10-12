@@ -57,7 +57,13 @@ export function StockTableView({
       {/* Virtualized Rows Container */}
       <div
         ref={parentRef}
-        className="h-[calc(100dvh-290px)] min-h-[500px] overflow-auto momentum-scroll scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700 relative"
+        style={{ 
+          overscrollBehavior: "contain", 
+          overscrollBehaviorY: "contain", 
+          touchAction: "pan-y",
+          WebkitOverflowScrolling: "touch"
+        }}
+        className="h-[calc(100dvh-290px)] min-h-[500px] overflow-y-auto overflow-x-hidden momentum-scroll scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-zinc-700 relative"
       >
         <div
           style={{
